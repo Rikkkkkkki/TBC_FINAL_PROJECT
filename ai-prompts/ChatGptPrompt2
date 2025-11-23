@@ -1,0 +1,117 @@
+prompt:
+imagine you are a test automation engineer. Read the User Story and Acceptance Criteria below. Your task is to create clear and practical test scenarios for the Auto Loan / Quick Auto Loan calculator. For each test scenario, include: Scenario name , description Preconditions , setup Steps to perform ,Expected result.
+User Story
+As a user, I want to calculate the monthly payment amount for Auto Loan / Quick Auto Loan based on my income or loan amount (including all necessary payments) and request a loan, so that I can make an informed decision. 
+Context 
+On https://tbcbank.ge/ka/loans/auto-loan/auto-installment and https://tbcbank.ge/ka/loans/auto-loan/quick-auto-installment pages, the calculator currently does not include additional fees necessary for an exact monthly payment and calculates only by percentage.
+There are also no CRM processes for these products; users cannot request a call from the website to be contacted by a bank representative.
+
+Acceptance Criteria (Summary)
+• Calculator logic must match https://tbccredit.ge/ for GEL.
+• Support two modes: Based on Income and Based on Loan Amount.
+• Include additional fees in effective monthly payment, not only base percentage.
+Calculator Logic
+ General formula reference (financial): PV(rate, nper, pmt, [fv], [type]) where:
+ - rate: annual interest averaged per 12 months
+ - nper: period in months
+ - pmt: monthly payment (derived from income-based rules or loan-based amortization)
+ Note: Effective interest rate (with fees) must be displayed alongside base interest rate.
+Mode A — Based on Income (შემოსავლით)
+  Income entered in GEL (tooltip required).
+  Loan currency selectable: GEL / USD / EUR (admin-configurable in CMS).
+  Period range (months) configurable in CMS: Auto Installment 6–120; Quick Auto Loan 6–72.
+  Monthly contribution (ყოველთიური შენატანი) = portion of income based on thresholds:
+   • If income < 1500: GEL→25% of income; USD/EUR→20% of income.
+   • If income ≥ 1500: GEL→50% of income; USD/EUR→30% of income.
+   Loan limit is calculated (consult TBCCredit team for the exact formula).
+   Display: Base interest (e.g., From 14.5%) and Effective interest (e.g., From 26.13%) – both editable via CMS.
+Mode B — Based on Loan Amount (სესხის თანხით)
+  Loan amount in GEL/USD/EUR (min 200 ₾, max 80,000 ₾).
+  If outside range, auto-correct to min/max.
+  Monthly payment must include both principal and interest (standard amortization).
+  Currency default GEL; currency list configurable from CMS; tooltip clarifies behavior.
+  Period range configurable in CMS (see Mode A).
+  Display base and effective rates (CMS).
+ What to Test (Recommended Scenarios)
+  • UI: Field presence, tooltips
+  • Income mode: threshold logic for monthly contribution across currencies; edge incomes (1499/1500).
+  • Loan mode: min/max auto-correction; amortization correctness; period boundaries.
+  • Rates: base vs effective display.
+  • Currency switching impacts monthly payment correctly.
+
+answer:
+1. Verify UI Elements and Tooltips
+
+Preconditions / Setup:
+
+Open Auto Loan / Quick Auto Loan calculator.
+
+Steps:
+
+Check that all fields (Income/Loan Amount, Currency, Period) are visible.
+
+Hover over tooltips for Income / Loan Amount / Currency.
+
+Verify display of Base and Effective interest rates.
+
+Expected Result:
+
+All fields and tooltips are present and informative.
+
+Interest rates are displayed correctly.
+
+2. Validate Monthly Contribution for Income Mode
+
+Preconditions / Setup:
+
+Mode: Based on Income.
+
+Steps:
+
+Enter income = 1499 GEL and 1500 GEL (test threshold).
+
+Check monthly contribution calculation.
+
+Expected Result:
+
+Income < 1500 → contribution = 25% GEL (20% USD/EUR).
+
+Income ≥ 1500 → contribution = 50% GEL (30% USD/EUR).
+
+3. Validate Min / Max Loan Amount in Loan Mode
+
+Preconditions / Setup:
+
+Mode: Based on Loan Amount.
+
+Steps:
+
+Enter loan amount below min → verify auto-correct to min.
+
+Enter loan amount above max → verify auto-correct to max.
+
+Expected Result:
+
+Loan amount auto-corrects to CMS-configured min/max.
+
+4. Verify Monthly Payment Calculation
+
+Preconditions / Setup:
+
+Mode: Based on Loan Amount.
+
+Enter valid loan amount and period.
+
+Steps:
+
+Calculate monthly payment.
+
+Compare with standard amortization formula.
+
+Expected Result:
+
+Monthly payment includes principal + interest.
+
+Calculation matches reference formula.
+
+

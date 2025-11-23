@@ -1,0 +1,33 @@
+Prompt:
+
+Application Name: TBC Bank – Auto Loan / Quick Auto Loan Calculator
+Platform: Web (https://tbcbank.ge/ka/loans/auto-loan/auto-installment and https://tbcbank.ge/ka/loans/auto-loan/quick-auto-installment)
+Purpose:
+The Auto Loan / Quick Auto Loan Calculator allows users to estimate their potential monthly loan payments based on either their income or desired loan amount. It provides a clear breakdown of monthly contributions, interest rates, and loan duration options to help users make informed financial decisions before applying for a loan.
+Key Features:
+*	Two calculation modes:
+    .	Based on Income: Calculates eligible loan amount and monthly payment as a percentage of user income.
+    .	Based on Loan Amount: Calculates monthly payment and total cost based on entered loan value and interest rate.
+*	Currency Support: GEL, USD, and EUR.
+*	Dynamic Interest Rates: Displays both Base Interest Rate and Effective Interest Rate (including additional fees).
+*	Configurable Period Range:
+    .	Auto Installment: 6–120 months
+    .	Quick Auto Loan: 6–72 months
+*	User Experience Enhancements: Tooltips for income and currency fields, automatic correction for invalid loan amounts (below 200 GEL or above 80,000 GEL), and CMS-configurable settings for rates and ranges.
+Business Value:
+This calculator enhances the loan application experience by providing transparency and accuracy in financial calculations, aligning with the logic used on TBCCredit.ge. It helps users understand repayment expectations, supports responsible borrowing, and enables smoother lead generation for the bank’s CRM process.
+
+answer:
+Test Cases to Build
+
+1)Verify end-to-end functionality of the "Based on Income" calculation mode, ensuring accurate eligible loan amount and monthly payment calculation as a percentage of user income,
+with dynamic interest rates and currency support (GEL, USD, EUR), and validation for income input field including tooltip display
+and error handling for invalid inputs.
+
+2)Verify end-to-end functionality of the "Based on Loan Amount" calculation mode, ensuring accurate monthly payment and total cost calculation
+based on entered loan value, interest rate, and loan duration, with dynamic interest rates, currency support (GEL, USD, EUR), and validation
+for loan amount input field including automatic correction for values below 200 GEL or above 80,000 GEL
+
+3)Verify end-to-end functionality of configurable period ranges for both "Auto Installment" (6–120 months) and "Quick Auto Loan" (6–72 months),
+ensuring accurate calculations for all supported durations, proper display of Base and Effective Interest Rates,
+and CMS-configurable settings for rates and ranges.

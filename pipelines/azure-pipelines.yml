@@ -1,0 +1,118 @@
+#--------------------------------------------------------------
+# UI/API/Axe Tests Pipeline
+#--------------------------------------------------------------
+trigger:
+  - master
+
+pr:
+  branches:
+    include:
+      - '*'
+
+schedules:
+  - cron: "0 9 * * 1-5"
+    displayName: Daily Functional & Accessibility Run
+    branches:
+      include:
+        - main
+    always: true
+
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  ALLURE_VERSION: '2.35.1'
+
+pool:
+  vmImage: ubuntu-latest
+
+#--------------------------------------------------------------
+#UI/API/Axe
+#--------------------------------------------------------------
+jobs:
+  - job: execute_tests
+    displayName: 'Run UI, API & Axe Tests'
+    timeoutInMinutes: 30
+
+    steps:
+      - checkout: self
+        displayName: 'Checkout Repository'
+
+      - task: Cache@2
+        displayName: 'Cache Maven Dependencies'
+        inputs:
+          key: 'maven | "$(Agent.OS)" | **/pom.xml'
+          restoreKeys: |
+            maven | "$(Agent.OS)"
+            maven
+          path: $(MAVEN_CACHE_FOLDER)
+
+      - script: |
+          echo "Installing Google Chrome..."
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          google-chrome --version
+        displayName: 'Install Google Chrome'
+
+      - script: |
+          echo "Installing Allure v$(ALLURE_VERSION)..."
+          wget https://github.com/allure-framework/allure2/releases/download/$(ALLURE_VERSION)/allure-$(ALLURE_VERSION).tgz
+          tar -zxvf allure-$(ALLURE_VERSION).tgz -C /opt/
+          sudo ln -s /opt/allure-$(ALLURE_VERSION)/bin/allure /usr/bin/allure
+          allure --version
+        displayName: 'Install Allure CLI'
+
+      - task: Maven@4
+        displayName: 'Run Maven Tests (UI, API, Axe)'
+        inputs:
+          mavenPomFile: 'pom.xml'
+          goals: 'clean test'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'Test Automation Results'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '1.17'
+          mavenVersionOption: 'Default'
+          mavenOptions: '-Xmx3072m'
+          options: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+          mavenAuthenticateFeed: false
+          effectivePomSkip: false
+          sonarQubeRunAnalysis: false
+        continueOnError: false
+
+      - script: |
+          set -e
+          if [ -d "target/allure-results" ] && [ -n "$(ls -A target/allure-results 2>/dev/null)" ]; then
+            echo "Generating Allure report..."
+            allure generate target/allure-results --clean -o target/allure-report
+            echo "Allure report generated successfully."
+          else
+            echo "ERROR: Allure results directory 'target/allure-results' is empty or does not exist."
+            exit 1
+          fi
+        displayName: 'Generate Allure Report'
+        condition: always()
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Allure Report Artifact'
+        condition: always()
+        inputs:
+          PathtoPublish: 'target/allure-report'
+          ArtifactName: 'allure-report'
+          publishLocation: 'Container'
+
+      - task: PublishAllureReport@1
+        displayName: 'Publish Allure Report to Azure DevOps'
+        condition: succeededOrFailed()
+        inputs:
+          testResultsDir: 'target/allure-results'
+
+      - task: PublishTestResults@2
+        displayName: 'Publish JUnit Test Results'
+        condition: always()
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          mergeTestResults: true
+          failTaskOnFailedTests: false
+          testRunTitle: 'Test Automation Execution'

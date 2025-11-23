@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="All Tests Suite" verbose="1" parallel="tests" thread-count="3">
+
+    <test name="API Tests" preserve-order="true">
+        <classes>
+            <class name="ge.tbc.testautomation.tests.api.APITests"/>
+        </classes>
+    </test>
+
+    <test name="UI Tests" preserve-order="true">
+        <classes>
+            <class name="ge.tbc.testautomation.tests.playwright.IncomeLoanTest"/>
+            <class name="ge.tbc.testautomation.tests.playwright.LoanAmountValidationTest"/>
+            <class name="ge.tbc.testautomation.tests.playwright.OffersTest"/>
+            <class name="ge.tbc.testautomation.tests.api.APITests"/>
+            <class name="ge.tbc.testautomation.tests.axecore.OffersPageAccessibilityTests"/>
+        </classes>
+    </test>
+
+    <test name="Accessibility Tests" preserve-order="true">
+        <classes>
+            <class name="ge.tbc.testautomation.tests.axecore.OffersPageAccessibilityTests"/>
+        </classes>
+    </test>
+
+</suite>

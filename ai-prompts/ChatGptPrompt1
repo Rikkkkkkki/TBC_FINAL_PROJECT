@@ -1,0 +1,180 @@
+Prompt:
+You are a senior test automation engineer with strong expertise in Playwright and Java. I am sharing a Playwright test automation codebase with you. Review it carefully and provide practical suggestions to improve it. Focus on code structure, organization, readability, maintainability, selectors and locators, assertions and validations, test data usage, performance, and best practices. Include any tips for refactoring, error handling, retries, or making the tests more robust. Provide actionable feedback with examples or short code snippets when relevant.
+
+here should be the LoanPage , LoanSteps and IncomeLoanTest.
+
+Answer:
+1. Code Structure & Organization
+Observations:
+
+Test class IncomeLoanTest mixes navigation, test setup, and test execution.
+
+LoanSteps handles a lot of logic, including calculations (monthly contribution).
+
+LoanPage contains locators using fragile XPath expressions.
+
+Recommendations:
+
+Separate responsibilities clearly:
+
+LoanPage: Only locators. No logic.
+
+LoanSteps: Only user actions + assertions.
+
+HelperMethods: Utility calculations (like monthly contribution).
+
+Tests: Only orchestrates steps.
+
+Use meaningful method names: checkLoanPeriod → verifyLoanPeriodDisplayedCorrectly.
+
+Avoid @BeforeClass for navigation: Navigation can be moved to @BeforeMethod if each test needs a fresh page state.
+
+2. Selectors & Locators
+Observations:
+
+XPaths are fragile ("//input[@class='input ng-untouched ng-pristine ng-valid']").
+
+Using .first() / .last() is risky if DOM changes.
+
+Recommendations:
+
+Use data-test-id attributes if possible:
+
+incomeInput = page.locator("[data-test-id='income-input']");
+incomeMonthInput = page.locator("[data-test-id='loan-period-input']");
+
+
+Avoid absolute XPaths; prefer relative paths with clear labels:
+
+monthlyPayments = page.locator("div:has-text('Monthly contribution') + div");
+
+
+Caching locators in Page Object is good, but consider lazy evaluation if elements are dynamic.
+
+3. Assertions & Validations
+Observations:
+
+Currently PlaywrightAssertions.assertThat(...).containsText(...) is used.
+
+Sometimes converting double to string for comparison, which can cause flaky tests due to formatting.
+
+Recommendations:
+
+Use numeric comparison for calculated values:
+
+double actual = HelperMethods.parseMoney(loanPage.monthlyPayments.textContent());
+double expected = incomeValue < 1500 ? incomeValue * 0.25 : incomeValue * 0.50;
+assertEquals(actual, expected, 0.01, "Monthly contribution mismatch");
+
+
+Add visibility check first before text comparison to avoid ElementNotVisible errors:
+
+PlaywrightAssertions.assertThat(locator).isVisible();
+PlaywrightAssertions.assertThat(locator).hasText(expectedText);
+
+
+Use hasText() instead of containsText() for stricter validation if exact match is expected.
+
+4. Test Data Management
+Observations:
+
+Constants are hard-coded in Constants.java.
+
+No parameterization of test inputs.
+
+Recommendations:
+
+Use TestNG DataProvider to run multiple scenarios:
+
+@DataProvider(name="incomeData")
+public Object[][] incomeData() {
+    return new Object[][] {
+        {"1000", 36, "250"}, 
+        {"2000", 36, "1000"}
+    };
+}
+
+@Test(dataProvider="incomeData")
+public void incomeLoanTest(String income, String period, String expectedContribution) {
+    loanSteps.openByIncomeTab()
+             .enterIncome(income)
+             .enterLoanPeriod(period)
+             .checkMonthlyContribution(expectedContribution);
+}
+
+
+This improves maintainability and avoids hard-coded values.
+
+5. Error Handling & Robustness
+Observations:
+
+No retry logic for flaky elements.
+
+No timeout or wait before assertions.
+
+Recommendations:
+
+Use Playwright Locator.waitFor() or expect(...).toBeVisible() to ensure element is ready:
+
+loanPage.monthlyPayments.waitFor(new Locator.WaitForOptions().setTimeout(5000));
+PlaywrightAssertions.assertThat(loanPage.monthlyPayments).hasText(formattedExpected);
+
+
+Implement retry mechanism for transient failures via TestNG retryAnalyzer.
+
+6. Code Readability & Maintainability
+Observations:
+
+Steps methods are long; inline calculations inside checkMonthlyContribution.
+
+Some naming inconsistencies: Effective_LOAN_INTEREST_RATE vs method name checkEffectiveInterestRate.
+
+Recommendations:
+
+Move calculations to HelperMethods:
+
+public static double calculateMonthlyContribution(double income) {
+    return income < 1500 ? income * 0.25 : income * 0.50;
+}
+
+
+Method chaining is good but limit it to actions, keep assertions separate for clarity:
+
+loanSteps.openByIncomeTab()
+         .enterIncome(income)
+         .enterLoanPeriod(period);
+
+loanSteps.verifyMonthlyContribution(expectedContribution);
+loanSteps.verifyInterestRates(baseRate, effectiveRate);
+
+
+Consistent naming for constants (all uppercase with underscores) vs methods (camelCase).
+
+7. Performance Tips
+
+Avoid locating the same element repeatedly. Cache locators in Page Objects.
+
+Use page.waitForLoadState() before heavy calculations or assertions.
+
+Minimize page.navigate() if test reuses the same page; use state reset instead.
+
+8. Example Refactored Step
+@Step("Verify monthly contribution is calculated correctly for income: {0}")
+public LoanSteps verifyMonthlyContribution(String incomeAmount) {
+    double incomeValue = Double.parseDouble(incomeAmount);
+    double expected = HelperMethods.calculateMonthlyContribution(incomeValue);
+    double actual = HelperMethods.parseMoney(loanPage.monthlyPayments.textContent());
+    assertEquals(actual, expected, 0.01, "Monthly contribution mismatch");
+    return this;
+}
+
+✅ Summary of Actionable Improvements
+Area	Suggestion
+Locators:	Use data-test-id or descriptive relative locators. Avoid fragile XPath.
+Assertions:	Prefer numeric comparison for financials; check visibility first.
+Steps:	Separate actions and validations; move calculations to helpers.
+Test Data:	Parameterize tests with DataProvider or JSON/CSV.
+Error Handling:	Add waits, retries, and timeouts to avoid flaky tests.
+Code Structure:	Follow Page Object pattern strictly; chain only actions, not assertions.
+Performance	Cache: locators, minimize navigation, wait for page load.
+Readability: Consistent naming, move inline calculations, descriptive method names.

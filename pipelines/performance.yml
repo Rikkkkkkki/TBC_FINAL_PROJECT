@@ -1,0 +1,61 @@
+trigger: none
+
+pr: none
+
+#--------------------------------------------------------------
+# Schedules
+#--------------------------------------------------------------
+schedules:
+  - cron: "0 9 * * 0"
+    displayName: Weekly Performance Run
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: ubuntu-latest
+
+#--------------------------------------------------------------
+#k6 Performance Tests
+#--------------------------------------------------------------
+jobs:
+  - job: k6_performance_tests
+    displayName: 'Run k6 Performance Tests'
+    timeoutInMinutes: 20
+
+    steps:
+      - checkout: self
+        displayName: 'Checkout Repository'
+
+      - script: |
+          echo "Installing k6..."
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+          k6 version
+        displayName: 'Install k6'
+
+      - script: |
+          echo "Running k6 performance tests..."
+          k6 run k6/offers-performance-test.js
+          echo "k6 tests completed."
+        displayName: 'Run k6 Performance Tests'
+        continueOnError: true
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish k6 HTML Report as Artifact'
+        condition: always()
+        inputs:
+          PathtoPublish: 'k6'
+          ArtifactName: 'k6-performance-report'
+          publishLocation: 'Container'
+
+      - task: publishhtmlreport@1
+        displayName: 'Publish HTML Report as Tab'
+        condition: always()
+        inputs:
+          reportDir: '$(System.DefaultWorkingDirectory)/k6'
+          tabName: 'K6 Performance Report'
